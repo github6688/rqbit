@@ -1,51 +1,31 @@
-name: Release binaries for Windows
+name: Build Universal Windows rqbit.exe (32 & 64-bit)
 
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - "v*.*.*"
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  release-windows:
+  build-universal-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Binstall
-        uses: cargo-bins/cargo-binstall@main
-
-      - name: install Tauri
-        run: cargo binstall tauri-cli --no-confirm
-
-      - name: npm install (desktop)
-        working-directory: desktop
-        run: npm install
+      - name: Install Rust 32-bit target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: i686-pc-windows-msvc
 
       - name: npm install (librqbit/webui)
         working-directory: crates/librqbit/webui
         run: npm install
 
-      - name: cargo tauri build
-        working-directory: desktop
-        run: cargo tauri build --ci
+      - name: Build Universal rqbit.exe
+        run: cargo build --profile release-github --target i686-pc-windows-msvc -p rqbit
 
-      - uses: softprops/action-gh-release@v3
+      - name: Upload Universal rqbit.exe
+        uses: actions/upload-artifact@v4
         with:
-          generate_release_notes: true
-          draft: true
-          files: |
-            target/release/bundle/msi/rqbit-desktop_*_x64_en-US.msi
-
-      - name: Build release
-        run: cargo build --profile release-github
-
-      - uses: softprops/action-gh-release@v3
-        with:
-          generate_release_notes: true
-          draft: true
-          files: |
-            target/release-github/rqbit.exe
+          name: rqbit-win-universal
+          path: target/i686-pc-windows-msvc/release-github/rqbit.exe
